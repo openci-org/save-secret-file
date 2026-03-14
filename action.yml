@@ -1,0 +1,23 @@
+name: 'OpenCI Save Secret File'
+description: 'Decode a base64-encoded secret and save it to a file'
+branding:
+  icon: 'lock'
+  color: 'purple'
+
+inputs:
+  secret:
+    description: 'Base64-encoded file content (typically from ${{ secrets.NAME }})'
+    required: true
+  path:
+    description: 'File path to save the decoded content to (e.g. lib/firebase_options.dart)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Save secret file
+      shell: bash
+      run: |
+        mkdir -p "$(dirname "${{ inputs.path }}")"
+        echo "${{ inputs.secret }}" | base64 -D > "${{ inputs.path }}"
+        echo "Saved secret file to ${{ inputs.path }}"
