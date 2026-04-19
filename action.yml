@@ -19,7 +19,11 @@ runs:
       shell: bash
       run: |
         mkdir -p "$(dirname "$FILE_PATH")"
-        echo "$SECRET_CONTENT" | base64 -D > "$FILE_PATH"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          echo "$SECRET_CONTENT" | base64 -D > "$FILE_PATH"
+        else
+          echo "$SECRET_CONTENT" | base64 -d > "$FILE_PATH"
+        fi
       env:
         SECRET_CONTENT: ${{ inputs.secret }}
         FILE_PATH: ${{ inputs.path }}
