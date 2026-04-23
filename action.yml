@@ -1,16 +1,20 @@
 name: Save Secret File
-description: Decode a base64-encoded secret and save it to a file
+description: Save a secret to a file. Supports base64-decoded or raw content.
 branding:
   icon: lock
   color: purple
 
 inputs:
   secret:
-    description: Base64-encoded file content
+    description: Secret content (base64-encoded by default, or raw when `encoding` is set to `raw`)
     required: true
   path:
-    description: File path to save the decoded content
+    description: File path to save the content
     required: true
+  encoding:
+    description: How to interpret the secret. `base64` (default) decodes the value before writing. `raw` writes the value as-is, useful for JSON or other plaintext files.
+    required: false
+    default: base64
 
 runs:
   using: composite
@@ -18,12 +22,25 @@ runs:
     - name: Save secret file
       shell: bash
       run: |
+        set -euo pipefail
         mkdir -p "$(dirname "$FILE_PATH")"
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-          echo "$SECRET_CONTENT" | base64 -D > "$FILE_PATH"
-        else
-          echo "$SECRET_CONTENT" | base64 -d > "$FILE_PATH"
-        fi
+        case "$ENCODING" in
+          base64)
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              printf '%s' "$SECRET_CONTENT" | base64 -D > "$FILE_PATH"
+            else
+              printf '%s' "$SECRET_CONTENT" | base64 -d > "$FILE_PATH"
+            fi
+            ;;
+          raw)
+            printf '%s' "$SECRET_CONTENT" > "$FILE_PATH"
+            ;;
+          *)
+            echo "Unsupported encoding: '$ENCODING' (must be 'base64' or 'raw')" >&2
+            exit 1
+            ;;
+        esac
       env:
         SECRET_CONTENT: ${{ inputs.secret }}
         FILE_PATH: ${{ inputs.path }}
+        ENCODING: ${{ inputs.encoding }}
